@@ -30,7 +30,7 @@ const PROJECTS = [
       {
         title: "1. 入门",
         videos: [
-          { title: "项目介绍", duration: "3 分钟", description: "项目背景和培训内容概览。", link: "" },
+          { title: "项目介绍", duration: "3 分钟", description: "项目背景和培训内容概览。", link: "https://youtube.com/shorts/671aq9EhyGc?is=LOd0wwoyuE2NbZnP" },
           { title: "工具和账号", duration: "6 分钟", description: "需要用到的工具，以及在哪里找到它们。", link: "" },
         ],
       },
