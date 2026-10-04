@@ -50,6 +50,9 @@
   .player iframe, .player video { width: 100%; height: 100%; border: 0; display: block; }
   .placeholder { height: 100%; display: flex; align-items: center; justify-content: center;
     text-align: center; color: #c9ced6; padding: 24px; }
+  .langs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; font-size: .9rem; color: var(--muted); }
+  .langs button { padding: 4px 12px; font-size: .9rem; }
+  .langs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .info { margin-top: 16px; }
   .info h2 { margin: 0 0 4px; font-size: 1.3rem; }
   .meta { color: var(--muted); font-size: .9rem; }
@@ -97,6 +100,7 @@
 <main class="wrap project" id="project" hidden>
   <section>
     <div class="player" id="player"></div>
+    <div class="langs" id="langs"></div>
     <div class="info">
       <h2 id="v-title"></h2>
       <div class="meta" id="v-meta"></div>
@@ -130,6 +134,12 @@
   let watched = new Set();
   try { watched = new Set(JSON.parse(localStorage.getItem(STORE)) || []); } catch (e) {}
   const save = () => { try { localStorage.setItem(STORE, JSON.stringify([...watched])); } catch (e) {} };
+
+  // Language versions of each video; the chosen one is remembered in this browser.
+  const LANGS = ["中文", "English", "Español"];
+  let lang = LANGS[0];
+  try { if (LANGS.includes(localStorage.getItem("training-lang"))) lang = localStorage.getItem("training-lang"); } catch (e) {}
+  const linkFor = (v, l) => ((v.links && v.links[l]) || (l === LANGS[0] && v.link) || "").trim();
 
   let project = null, current = 0;
   const $ = id => document.getElementById(id);
@@ -186,6 +196,7 @@
     $("project").hidden = false;
     if (!p.videos.length) {
       $("player").innerHTML = `<div class="placeholder">这个项目还没有视频</div>`;
+      $("langs").innerHTML = "";
       ["v-title", "v-meta", "v-desc"].forEach(id => $(id).textContent = "");
       $("prev").disabled = $("next").disabled = $("done-btn").disabled = true;
       render();
@@ -193,7 +204,13 @@
     }
     current = Math.max(0, Math.min(p.videos.length - 1, i));
     const v = p.videos[current];
-    $("player").innerHTML = embed(v.link);
+    const link = linkFor(v, lang);
+    const hasOther = LANGS.some(l => linkFor(v, l));
+    $("player").innerHTML = !link && hasOther
+      ? `<div class="placeholder">这个视频还没有 ${esc(lang)} 版本<br>请选择下面其他语言</div>`
+      : embed(link);
+    $("langs").innerHTML = "语言：" + LANGS.map(l =>
+      `<button data-lang="${l}" class="${l === lang ? "on" : ""}" ${linkFor(v, l) ? "" : "disabled"}>${l}</button>`).join("");
     $("v-title").textContent = v.title;
     $("v-meta").textContent = [v.section, v.duration].filter(Boolean).join(" · ");
     $("v-desc").textContent = v.description || "";
@@ -239,6 +256,13 @@
 
   $("list").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) showProject(project, +b.dataset.i); });
   $("search").addEventListener("input", render);
+  $("langs").addEventListener("click", e => {
+    const b = e.target.closest("[data-lang]");
+    if (!b || b.disabled) return;
+    lang = b.dataset.lang;
+    try { localStorage.setItem("training-lang", lang); } catch (e) {}
+    showProject(project, current);
+  });
   $("prev").onclick = () => showProject(project, current - 1);
   $("next").onclick = () => showProject(project, current + 1);
   $("done-btn").onclick = () => {
