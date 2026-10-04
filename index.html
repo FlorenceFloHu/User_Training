@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>培训中心</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #646b78;
+    --line: #e3e6eb; --accent: #2f6fde; --accent-soft: #e8f0fd; --done: #1f9d55;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161b; --panel: #1c1f26; --text: #e8eaee; --muted: #9aa1ad;
+      --line: #2c313b; --accent: #6b9cf5; --accent-soft: #23304a; --done: #4cc38a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+  }
+  [hidden] { display: none !important; }
+  header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 20px 16px; }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  .subtitle { margin: 0; color: var(--muted); }
+  .back { display: inline-block; margin-bottom: 8px; color: var(--accent); text-decoration: none; font-size: .95rem; }
+  .back:hover { text-decoration: underline; }
+  .progress { margin-top: 14px; display: flex; align-items: center; gap: 12px; font-size: .9rem; color: var(--muted); }
+  .bar { flex: 1; max-width: 320px; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--done); transition: width .3s; }
+
+  /* Home: project cards */
+  .home { padding: 24px 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    display: block; text-decoration: none; color: inherit; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; padding: 18px;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card h3 { margin: 0 0 6px; font-size: 1.15rem; }
+  .card p { margin: 0 0 14px; color: var(--muted); font-size: .95rem; }
+  .card .progress { margin-top: 0; }
+
+  /* Project: player + list */
+  .project { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; padding: 24px 16px; }
+  @media (max-width: 860px) { .project { grid-template-columns: 1fr; } }
+  .player { aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden; }
+  .player iframe, .player video { width: 100%; height: 100%; border: 0; display: block; }
+  .placeholder { height: 100%; display: flex; align-items: center; justify-content: center;
+    text-align: center; color: #c9ced6; padding: 24px; }
+  .info { margin-top: 16px; }
+  .info h2 { margin: 0 0 4px; font-size: 1.3rem; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .desc { margin: 12px 0 16px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    font: inherit; font-size: .95rem; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.is-done { background: var(--done); border-color: var(--done); color: #fff; }
+
+  aside { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; align-self: start; }
+  .search { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text); margin-bottom: 8px; }
+  .section-title { font-size: .85rem; font-weight: 600; color: var(--muted); margin: 14px 6px 6px; }
+  .item { display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left;
+    border: 0; border-radius: 8px; padding: 8px; background: none; }
+  .item:hover { background: var(--bg); }
+  .item.active { background: var(--accent-soft); }
+  .check { flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%;
+    border: 2px solid var(--line); display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #fff; }
+  .item.done .check { background: var(--done); border-color: var(--done); }
+  .item small { display: block; color: var(--muted); }
+  .empty { color: var(--muted); padding: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a class="back" id="back" href="#" hidden>← 所有项目</a>
+    <h1 id="h-title"></h1>
+    <p class="subtitle" id="h-subtitle"></p>
+    <div class="progress" id="h-progress" hidden><div class="bar"><div id="bar-fill"></div></div><span id="progress-text"></span></div>
+  </div>
+</header>
+
+<main class="wrap home" id="home">
+  <div class="grid" id="grid"></div>
+</main>
+
+<main class="wrap project" id="project" hidden>
+  <section>
+    <div class="player" id="player"></div>
+    <div class="info">
+      <h2 id="v-title"></h2>
+      <div class="meta" id="v-meta"></div>
+      <p class="desc" id="v-desc"></p>
+      <div class="actions">
+        <button id="prev">← 上一个</button>
+        <button id="done-btn"></button>
+        <button id="next" class="primary">下一个 →</button>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <input class="search" id="search" type="search" placeholder="搜索本项目的视频…">
+    <nav id="list"></nav>
+  </aside>
+</main>
+
+<script src="videos.js"></script>
+<script>
+  // Flatten each project's sections into one ordered list of videos.
+  // Video ids look like "1-2-3" (project 1, section 2, video 3).
+  const projects = PROJECTS.map((p, pi) => {
+    const videos = [];
+    (p.sections || []).forEach((s, si) => (s.videos || []).forEach((v, vi) =>
+      videos.push({ ...v, section: s.title, id: `${pi + 1}-${si + 1}-${vi + 1}` })));
+    return { ...p, num: pi + 1, videos };
+  });
+
+  // Watched videos are remembered in this browser only.
+  const STORE = "training-watched-v2";
+  let watched = new Set();
+  try { watched = new Set(JSON.parse(localStorage.getItem(STORE)) || []); } catch (e) {}
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify([...watched])); } catch (e) {} };
+
+  let project = null, current = 0;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const countDone = p => p.videos.filter(v => watched.has(v.id)).length;
+  const progressHtml = p => {
+    const n = countDone(p), pct = p.videos.length ? n / p.videos.length * 100 : 0;
+    return `<div class="bar"><div style="width:${pct}%"></div></div><span>已看 ${n} / ${p.videos.length}</span>`;
+  };
+
+  // Turn a normal share link into something the page can play.
+  function embed(link) {
+    link = (link || "").trim();
+    if (!link) return `<div class="placeholder">还没有视频链接<br>请在 videos.js 中为这个视频添加链接</div>`;
+    let m;
+    if ((m = link.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/)))
+      return frame(`https://www.youtube-nocookie.com/embed/${m[1]}?rel=0`);
+    if ((m = link.match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/(\w+))?/)))
+      return frame(`https://player.vimeo.com/video/${m[1]}${m[2] ? "?h=" + m[2] : ""}`);
+    if ((m = link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/)))
+      return frame(`https://drive.google.com/file/d/${m[1]}/preview`);
+    return `<video controls preload="metadata" src="${esc(link)}"></video>`;
+  }
+  const frame = src => `<iframe src="${src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+
+  // ---- Home page: list of projects ----
+  function showHome() {
+    project = null;
+    document.title = SITE.title;
+    $("back").hidden = true;
+    $("h-title").textContent = SITE.title;
+    $("h-subtitle").textContent = SITE.subtitle;
+    $("h-progress").hidden = true;
+    $("project").hidden = true;
+    $("home").hidden = false;
+    $("player").innerHTML = ""; // stop any playing video
+    $("grid").innerHTML = projects.map(p => `
+      <a class="card" href="#${p.num}">
+        <h3>${esc(p.name)}</h3>
+        <p>${esc(p.description)}</p>
+        <div class="progress">${progressHtml(p)}</div>
+      </a>`).join("") || `<div class="empty">还没有项目，请在 videos.js 中添加。</div>`;
+  }
+
+  // ---- Project page: player + video list ----
+  function showProject(p, i) {
+    project = p;
+    document.title = `${p.name} · ${SITE.title}`;
+    $("back").hidden = false;
+    $("h-title").textContent = p.name;
+    $("h-subtitle").textContent = p.description || "";
+    $("h-progress").hidden = false;
+    $("home").hidden = true;
+    $("project").hidden = false;
+    if (!p.videos.length) {
+      $("player").innerHTML = `<div class="placeholder">这个项目还没有视频</div>`;
+      ["v-title", "v-meta", "v-desc"].forEach(id => $(id).textContent = "");
+      $("prev").disabled = $("next").disabled = $("done-btn").disabled = true;
+      render();
+      return;
+    }
+    current = Math.max(0, Math.min(p.videos.length - 1, i));
+    const v = p.videos[current];
+    $("player").innerHTML = embed(v.link);
+    $("v-title").textContent = v.title;
+    $("v-meta").textContent = [v.section, v.duration].filter(Boolean).join(" · ");
+    $("v-desc").textContent = v.description || "";
+    $("prev").disabled = current === 0;
+    $("next").disabled = current === p.videos.length - 1;
+    $("done-btn").disabled = false;
+    history.replaceState(null, "", "#" + v.id);
+    render();
+  }
+
+  function render() {
+    const p = project;
+    const v = p.videos[current];
+    const d = v && watched.has(v.id);
+    $("done-btn").textContent = d ? "✓ 已观看" : "标记为已观看";
+    $("done-btn").className = d ? "is-done" : "";
+
+    const n = countDone(p);
+    $("bar-fill").style.width = (p.videos.length ? n / p.videos.length * 100 : 0) + "%";
+    $("progress-text").textContent = `已看 ${n} / ${p.videos.length}`;
+
+    const q = $("search").value.trim().toLowerCase();
+    let html = "", lastSection = null;
+    p.videos.forEach((v, i) => {
+      if (q && !(v.title + " " + (v.description || "")).toLowerCase().includes(q)) return;
+      if (v.section !== lastSection) { html += `<div class="section-title">${esc(v.section)}</div>`; lastSection = v.section; }
+      const cls = ["item", i === current && "active", watched.has(v.id) && "done"].filter(Boolean).join(" ");
+      html += `<button class="${cls}" data-i="${i}"><span class="check">✓</span>
+        <span>${esc(v.title)}<small>${esc(v.duration)}</small></span></button>`;
+    });
+    $("list").innerHTML = html || `<div class="empty">没有找到相关视频</div>`;
+  }
+
+  // Route from the address bar: "" = home, "#2" = project 2, "#2-1-3" = a specific video.
+  function route() {
+    const h = location.hash.slice(1);
+    const p = projects.find(p => h === String(p.num) || h.startsWith(p.num + "-"));
+    if (!p) return showHome();
+    if (p !== project) $("search").value = "";
+    const i = p.videos.findIndex(v => v.id === h);
+    showProject(p, i >= 0 ? i : 0);
+  }
+
+  $("list").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) showProject(project, +b.dataset.i); });
+  $("search").addEventListener("input", render);
+  $("prev").onclick = () => showProject(project, current - 1);
+  $("next").onclick = () => showProject(project, current + 1);
+  $("done-btn").onclick = () => {
+    const id = project.videos[current].id;
+    watched.has(id) ? watched.delete(id) : watched.add(id);
+    save(); render();
+  };
+  window.addEventListener("hashchange", route);
+  route();
+</script>
+</body>
+</html>
